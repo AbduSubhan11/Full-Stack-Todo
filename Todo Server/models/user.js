@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-    username: {
+    name: {
         type: String,
         required: true,
     },
@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     },
     profilePicture: {
         type: String,
-        default: 'default.jpg',
+        default: 'https://www.gravatar.com/avatar/?d=mp&s=200',
     },
 
 })

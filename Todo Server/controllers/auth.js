@@ -1,5 +1,6 @@
 import { User } from "../models/user.js";
-import generateToken from "../utils/jwt.js";
+import { uploadImageToCloudinary } from "../utils/cloudinary.js";
+import { generateToken } from "../utils/jwt.js";
 import bcrypt from "bcryptjs";
 
 export const login = async (req, res) => {
@@ -87,14 +88,56 @@ export const logout = async (req, res) => {
   }
 };
 
-export const getUser = async (req,res) => {
-  const userId = req.params.id
-  const user = await User.findById(userId)
+export const getUser = async (req, res) => {
+  const userId = req.params.id;
+  const user = await User.findById(userId);
   if (!user) {
-    res.status(404).json({messgae: "User not found"})
+    res.status(404).json({ messgae: "User not found" });
   }
 
-  res.status(200).json(user)
-}
+  res.status(200).json(user);
+};
+
+export const editProfile = async (req, res) => {
+  const userId = req.user?._id;
+  const { name, email } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ message: "Name is required" });
+  }
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Is Required" });
+  }
+
+  try {
+    const updatedData = { name, email };
+    if (req.file) {
+      const imageUrl = await uploadImageToCloudinary(req.file.path);
+      if (!imageUrl) {
+        res.status(500).json({ message: "Failed to upload image" });
+        return;
+      }
+      updatedData.profilePicture = imageUrl;
+    }
 
 
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updatedData,
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};

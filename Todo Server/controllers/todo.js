@@ -1,4 +1,4 @@
-import { Todo } from "../models/todo";
+import { Todo } from "../models/todo.js";
 
 export const setTodos = async (req, res) => {
   const { title, description } = req.body;
@@ -58,6 +58,7 @@ export const deleteTodo = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 export const updateTodo = async (req,res)=>{
     const todoId = req.params.id;

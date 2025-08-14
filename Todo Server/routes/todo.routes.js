@@ -1,10 +1,10 @@
-import { setTodos, updateTodo, deleteTodo, allTodos } from "../controllers/todo";
+import { setTodos, updateTodo, deleteTodo, allTodos } from "../controllers/todo.js";
 import express from "express";
-import { isAuthenticated } from "../middleware/authenticate";
+import { isAuthenticated } from "../middleware/authenticate.js";
 
-const todoRoute = express.Router();
+export const todoRoute = express.Router();
 
 todoRoute.post("/setTodo",isAuthenticated ,setTodos);
-todoRoute.get("/allTodos", allTodos);    
+todoRoute.get("/allTodos", isAuthenticated, allTodos);    
 todoRoute.put("/update/:id", isAuthenticated , updateTodo);
 todoRoute.delete("/delete/:id", isAuthenticated , deleteTodo);

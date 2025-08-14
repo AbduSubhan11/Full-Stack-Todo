@@ -1,9 +1,20 @@
 import express from "express";
-import { login, logout, register } from "../controllers/auth";
+import {
+  editProfile,
+  getUser,
+  login,
+  logout,
+  register,
+} from "../controllers/auth.js";
+import { isAuthenticated } from "../middleware/authenticate.js";
+import {upload} from "../middleware/multer.js";
 
-const authrouter = express.Router();
+export const authrouter = express.Router();
+
+
 
 authrouter.post("/login", login);
-authrouter.post("/resgister", register);
-authrouter.post("/logout", logout);
-authrouter.post("/getuser/:userId", logout);
+authrouter.post("/register", register);
+authrouter.post("/logout/:userId", logout);
+authrouter.get("/getuser/:userId", getUser);
+authrouter.put("/edit-profile", isAuthenticated, upload.single("profilePicture"),editProfile);
