@@ -51,7 +51,6 @@ export default function EditProfile() {
       );
 
       const updated = await res.json();
-      console.log(updated);
       if (!res.ok) {
         toast.error(updated.message);
       }
@@ -59,7 +58,7 @@ export default function EditProfile() {
       toast.success("Profile Updated Succesfully", {
         autoClose: 1500,
       });
-      // localStorage.setItem("user", JSON.stringify(updated.user));
+      localStorage.setItem("user", JSON.stringify(updated.user));
       setTimeout(() => {
         route.push("/");
       }, 1500);
