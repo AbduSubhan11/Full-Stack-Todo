@@ -2,6 +2,8 @@ import { User } from "../models/user.js";
 import { uploadImageToCloudinary } from "../utils/cloudinary.js";
 import { generateToken } from "../utils/jwt.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
@@ -15,6 +17,11 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+    if (!user.isVerified) {
+      return res
+        .status(403)
+        .json({ message: "Please verify your email first" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -57,18 +64,29 @@ export const register = async (req, res) => {
 
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
-    const token = generateToken(user);
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "10m",
+    });
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    const verifyUrl = `${process.env.CLIENT_URL}/verify-email/${token}`;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      to: email,
+      subject: "Verify your email",
+      html: `<h1>Verify Email</h1><p>Click <a href="${verifyUrl}">here</a> to verify your email.</p>`,
     });
 
     return res.status(201).json({
-      message: "User registered successfully",
-      user,
-      token,
+      message:
+        "User registered successfully, please check your email to verify",
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -123,12 +141,9 @@ export const editProfile = async (req, res) => {
       updatedData.profilePicture = imageUrl;
     }
 
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      updatedData,
-      { new: true }
-    );
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+    });
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
@@ -137,6 +152,29 @@ export const editProfile = async (req, res) => {
       message: "Profile updated successfully",
       user: updatedUser,
     });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const verifyEmail = async (req, res) => {
+  const { token } = req.params;
+
+  if (!token) {
+    return res.status(400).json({ message: "Token is required" });
+  }
+  try {
+    const decode = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decode) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+    const user = await User.findById(decode.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found or expired" });
+    }
+    user.isVerified = true;
+    await user.save();
+    res.status(200).json({ messgae: "Email verified successfully" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
